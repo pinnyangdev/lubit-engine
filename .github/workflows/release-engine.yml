@@ -82,7 +82,15 @@ jobs:
             echo
             git log --pretty='- %s' ${prev:+$prev..}HEAD
           } > notes.md
-          gh release edit "${GITHUB_REF_NAME}" --notes-file notes.md
+          # 같은 태그 릴리스가 중복이면 gh release edit 은 모호하다고 실패합니다.
+          # 최신 것 하나를 골라 id 로 직접 써 넣습니다.
+          rid=$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=30" --jq "[.[] | select(.tag_name == \"${GITHUB_REF_NAME}\")][0].id")
+          if [ -z "$rid" ] || [ "$rid" = "null" ]; then
+            echo "태그 ${GITHUB_REF_NAME} 의 릴리스를 찾지 못했습니다."
+            exit 1
+          fi
+          gh api -X PATCH "repos/${GITHUB_REPOSITORY}/releases/${rid}" -F body=@notes.md > /dev/null
+          echo "릴리스 노트 반영 완료 (release id=${rid})"
 
   # 맥용 dmg · zip — 코드 서명 없이 빌드하므로 Gatekeeper 는 설치 시 우클릭-열기 로 확인합니다.
   # needs 로 Windows 게시가 끝난 뒤에 실행합니다 — 두 잡이 동시에 --publish always 로
