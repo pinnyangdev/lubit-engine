@@ -16,4 +16,10 @@
   <a href="http://discord.gg/3tpscUy32u">
     <img src="https://img.shields.io/discord/1558718330611703828?logo=discord" alt="Discord">
   </a>
+  <a>
+    <img src="https://img.shields.io/github/last-commit/pinnyangdev/lubit-engine" alt="GitHub last commit"/>
+  </a>
+  <a>
+    <img src="https://img.shields.io/github/commit-activity/w/pinnyangdev/lubit-engine" alt="GitHub commit activity"/>
+  </a>
 </p>
