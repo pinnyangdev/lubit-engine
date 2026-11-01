@@ -307,6 +307,13 @@ engine.get('/auth/discord/status', (c) => {
 // 아무 주소나 받도록 했다면 인증 코드를 가로채 세션을 훔칠 수 있습니다.
 const DESKTOP_CALLBACKS = ['http://127.0.0.1:51555/callback', 'http://localhost:51555/callback']
 
+// Cloudflare Tunnel이 Host 헤더를 localhost로 덮어써도 OAuth 돌아오는 주소는
+// 사이트 도메인으로 고정한다. (localhost로 보내면 provider가 redirect_uri_mismatch로 거절)
+const siteOrigin = (url: string) => {
+  const origin = new URL(url).origin
+  return /localhost|127\.0\.0\.1/.test(origin) ? origin : 'https://lubit.kr'
+}
+
 // code 를 받아 세션으로 바꿉니다. 웹 콜백과 데스크톱 앱이 함께 씁니다.
 async function discordSession(env: Env, code: string, redirect: string) {
   const clientId = env.DISCORD_CLIENT_ID
@@ -376,7 +383,7 @@ async function discordSession(env: Env, code: string, redirect: string) {
 }
 
 engine.get('/auth/discord/start', (c) => {
-  const webRedirect = `${new URL(c.req.url).origin}/api/engine/auth/discord/callback`
+  const webRedirect = `${siteOrigin(c.req.url)}/api/engine/auth/discord/callback`
   // 데스크톱 앱은 redirect_uri 로 자기 로컬 주소를 보냅니다. 미리 정해 둔
   // 주소가 아니면 처음부터 거절합니다.
   const requested = c.req.query('redirect_uri')
@@ -418,7 +425,7 @@ engine.get('/auth/discord/callback', async (c) => {
     const session = await discordSession(
       c.env,
       code,
-      `${new URL(c.req.url).origin}/api/engine/auth/discord/callback`,
+      `${siteOrigin(c.req.url)}/api/engine/auth/discord/callback`,
     )
     return c.redirect(`/console?token=${session.token}`)
   } catch {
@@ -524,7 +531,7 @@ async function googleSession(env: Env, code: string, redirect: string) {
 }
 
 engine.get('/auth/google/start', (c) => {
-  const webRedirect = `${new URL(c.req.url).origin}/api/engine/auth/google/callback`
+  const webRedirect = `${siteOrigin(c.req.url)}/api/engine/auth/google/callback`
   const requested = c.req.query('redirect_uri')
   const state = c.req.query('state')
   let redirect = webRedirect
@@ -563,7 +570,7 @@ engine.get('/auth/google/callback', async (c) => {
     const session = await googleSession(
       c.env,
       code,
-      `${new URL(c.req.url).origin}/api/engine/auth/google/callback`,
+      `${siteOrigin(c.req.url)}/api/engine/auth/google/callback`,
     )
     return c.redirect(`/console?token=${session.token}`)
   } catch {
