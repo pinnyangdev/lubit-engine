@@ -1,0 +1,13 @@
+{
+  "filename": "LubitConsole-0.1.0.apk",
+  "version": "0.1.0",
+  "size": 3115602,
+  "sha256": "3932d14bb6b9a73d7fb7551a5215c9773fc54e5ca856e761596e531f090e3f6f",
+  "builtAt": 1793506595338,
+  "parts": [
+    {
+      "path": "p000.bin",
+      "size": 3115602
+    }
+  ]
+}

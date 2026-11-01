@@ -1,0 +1,29 @@
+{
+  "filename": "LubitServerEngine-Setup-0.1.13.zip",
+  "version": "0.1.13",
+  "size": 87759981,
+  "sha256": "15532945d0f0caf94610fa53593271360a526f91d346641816c8c17e2d439cba",
+  "builtAt": 1793506594905,
+  "parts": [
+    {
+      "path": "p000.bin",
+      "size": 20971520
+    },
+    {
+      "path": "p001.bin",
+      "size": 20971520
+    },
+    {
+      "path": "p002.bin",
+      "size": 20971520
+    },
+    {
+      "path": "p003.bin",
+      "size": 20971520
+    },
+    {
+      "path": "p004.bin",
+      "size": 3873901
+    }
+  ]
+}

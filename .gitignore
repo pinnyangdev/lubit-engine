@@ -18,7 +18,6 @@ lubit-web.zip
 # 데스크톱 앱 설치 파일 빌드 결과물 (electron-builder)
 agent/release/
 # 위 release 파일을 20MB 로 쪼갠 사이트 배포본 — 매 빌드 다시 생성됩니다
-public/download/
 # 안드로이드 서명 키와 암호 (커밋 금지)
 android/keystore/
 android/keystore.properties
