@@ -1,5 +1,5 @@
 {
-  "generatedAt": 1793533606644,
+  "generatedAt": 1793535529984,
   "artifacts": [
     {
       "key": "engine",
@@ -13,15 +13,17 @@
       "key": "mac",
       "label": "macOS (Apple 실리콘 · 인텔)",
       "url": "/download/mac",
-      "size": 0,
-      "available": false
+      "size": 181873374,
+      "version": "0.1.14",
+      "available": true
     },
     {
       "key": "android",
       "label": "Android (APK)",
       "url": "/download/android",
-      "size": 0,
-      "available": false
+      "size": 3107506,
+      "version": "0.1.14",
+      "available": true
     },
     {
       "key": "ios",
