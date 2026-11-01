@@ -3,7 +3,7 @@
    - 해시가 붙은 정적 자산: 캐시 우선
    - /api/* 는 절대 캐시하지 않습니다 (실시간 로그·명령이므로) */
 
-const VERSION = 'lubit-shell-v2'
+const VERSION = 'lubit-shell-v3'
 const SHELL = ['/', '/console', '/manifest.json', '/favicon.svg', '/logo-mark.png', '/icon-192.png']
 
 self.addEventListener('install', (event) => {
