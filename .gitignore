@@ -10,7 +10,7 @@ dist
 .DS_Store
 *.log
 # VPS 이전용 내보낸 SQL · SQLite 파일 (실제 계정 데이터가 들어 있습니다)
-data/
+/data/
 # VPS 전송용 zip · 묶을 때 쓰는 임시 폴더
 lubit-web.zip
 .vps-package/
