@@ -11,20 +11,62 @@ dist
 *.log
 # VPS 이전용 내보낸 SQL · SQLite 파일 (실제 계정 데이터가 들어 있습니다)
 data/
-
 # VPS 전송용 zip · 묶을 때 쓰는 임시 폴더
 lubit-web.zip
 .vps-package/
 .vps-test/
-
 # 데스크톱 앱 설치 파일 빌드 결과물 (electron-builder)
 agent/release/
 # 위 release 파일을 20MB 로 쪼갠 사이트 배포본 — 매 빌드 다시 생성됩니다
 public/download/
-
 # 안드로이드 서명 키와 암호 (커밋 금지)
 android/keystore/
 android/keystore.properties
-
 # GitHub 토큰 — CI 가 릴리스를 게시할 때만 로컬에서 씁니다
 .gh-token
+*.apk
+*.aar
+*.ap_
+*.aab
+*.dex
+*.class
+bin/
+gen/
+out/
+.gradle/
+build/
+local.properties
+proguard/
+.navigation/
+captures/
+*.iml
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/libraries
+.idea/caches
+.idea/modules.xml
+.idea/navEditor.xml
+.externalNativeBuild
+.cxx/
+freeline.py
+freeline/
+freeline_project_description.json
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+fastlane/readme.md
+vcs.xml
+lint/intermediates/
+lint/generated/
+lint/outputs/
+lint/tmp/
+*.hprof
+capacitor-cordova-android-plugins
+app/src/main/assets/public
+app/src/main/assets/capacitor.config.json
+app/src/main/assets/capacitor.plugins.json
+app/src/main/res/xml/config.xml
