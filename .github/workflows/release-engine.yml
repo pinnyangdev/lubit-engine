@@ -66,6 +66,7 @@ jobs:
         working-directory: agent
         env:
           GH_TOKEN: ${{ secrets.ENGINE_GH_TOKEN || secrets.GITHUB_TOKEN }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: npm run release
 
       # 릴리스 노트 — 이전 태그 이후 커밋 제목을 그대로 올립니다.
@@ -125,6 +126,7 @@ jobs:
         working-directory: agent
         env:
           GH_TOKEN: ${{ secrets.ENGINE_GH_TOKEN || secrets.GITHUB_TOKEN }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: npm run release:mac
 
   # iOS IPA — Capacitor 프로젝트(ios/App)를 아카이브해 IPA 를 만듭니다.

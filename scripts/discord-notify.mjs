@@ -27,7 +27,9 @@ function readEnvFile() {
   return out
 }
 
-const webhook = (readEnvFile().DISCORD_WEBHOOK ?? '').trim()
+// 1) 환경변수를 먼저 — GitHub Actions 에서는 .env 가 gitignore 로 없으므로 Secret 을 씁니다.
+// 2) 없으면 로컬 .env 로 떨어집니다.
+const webhook = ((process.env.DISCORD_WEBHOOK ?? readEnvFile().DISCORD_WEBHOOK) ?? '').trim()
 if (!webhook) {
   console.log('[디스코드] DISCORD_WEBHOOK 이 비어 있어 패치노트 전송을 건너뜁니다.')
   process.exit(0)
