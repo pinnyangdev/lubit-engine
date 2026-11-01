@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="color-scheme" content="dark" />
+    <title>루빗 서버 구동기</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      :root {
+        --bg: #07090a;
+        --surface: #0d1113;
+        --surface-2: #12171a;
+        --line: rgba(206, 255, 240, 0.1);
+        --fg: #eef7f4;
+        --muted: #a0b3ae;
+        --faint: #6d7f7b;
+        --accent: #4ade80;
+        --accent-2: #22d3ee;
+        --danger: #fb7185;
+        --r: 18px;
+        --depth:
+          inset 0 0 0 1px rgba(206, 255, 240, 0.07),
+          inset 0 1px 0 rgba(255, 255, 255, 0.06),
+          0 30px 70px -40px rgba(0, 0, 0, 0.95);
+      }
+      [hidden] { display: none !important; }
+      html, body { height: 100%; }
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+        font-size: 14px;
+        -webkit-font-smoothing: antialiased;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        gap: 18px;
+      }
+
+      /* --- 배경 ---------------------------------------------------------- */
+      .bg { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+      .blob {
+        position: absolute; width: 620px; height: 620px; border-radius: 50%;
+        filter: blur(90px); opacity: 0.5;
+      }
+      .blob-a { top: -320px; left: -180px; background: radial-gradient(circle, rgba(74, 222, 128, 0.22), transparent 68%); }
+      .blob-b { bottom: -360px; right: -200px; background: radial-gradient(circle, rgba(34, 211, 238, 0.16), transparent 68%); }
+      .bg-grid {
+        position: absolute; inset: 0; opacity: 0.5;
+        background-image:
+          linear-gradient(to right, rgba(206, 255, 240, 0.045) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(206, 255, 240, 0.045) 1px, transparent 1px);
+        background-size: 56px 56px;
+        -webkit-mask-image: linear-gradient(to bottom, #000, transparent 78%);
+      }
+
+      /* --- 상단 ---------------------------------------------------------- */
+      .top { position: relative; display: flex; align-items: center; gap: 13px; }
+      .mark {
+        width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0;
+        background: #161210; display: grid; place-items: center;
+        box-shadow: var(--depth);
+      }
+      .brand h1 { font-size: 16px; font-weight: 600; letter-spacing: -0.02em; }
+      .brand p { font-size: 12px; color: var(--faint); margin-top: 2px; }
+      .pill {
+        margin-left: auto; display: inline-flex; align-items: center; gap: 8px;
+        padding: 7px 14px; border-radius: 999px; background: var(--surface);
+        font-size: 12.5px; color: var(--muted); box-shadow: var(--depth);
+        max-width: 40%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .who {
+        display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px;
+        border-radius: 999px; background: var(--surface); box-shadow: var(--depth);
+        font-size: 12.5px; color: var(--muted); max-width: 30%;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .who b { color: var(--fg); font-weight: 600; }
+      .dot {
+        width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+        background: #6d7f7b; transition: background 0.2s, box-shadow 0.2s;
+      }
+      .dot.on { background: var(--accent); box-shadow: 0 0 9px var(--accent); }
+      .dot.busy { background: var(--accent-2); box-shadow: 0 0 9px var(--accent-2); animation: pulse 1.1s ease-in-out infinite; }
+      .dot.bad { background: var(--danger); box-shadow: 0 0 9px var(--danger); }
+      .dot.lg { width: 9px; height: 9px; }
+      @keyframes pulse { 50% { opacity: 0.35; } }
+      .iconbtn {
+        height: 38px; min-width: 38px; padding: 0 12px; border-radius: 12px; border: 0; cursor: pointer;
+        background: var(--surface); color: var(--muted); display: inline-flex; align-items: center; gap: 7px;
+        box-shadow: var(--depth); transition: color 0.15s, transform 0.15s; font-family: inherit; font-size: 12.5px;
+      }
+      .iconbtn:hover { color: var(--fg); transform: translateY(-1px); }
+
+      /* --- 오버레이 ------------------------------------------------------- */
+      .overlay {
+        position: fixed; inset: 0; z-index: 30; display: grid; place-items: center;
+        background: rgba(3, 5, 6, 0.7); backdrop-filter: blur(7px); padding: 20px;
+        overflow-y: auto;
+      }
+      .setup {
+        width: min(560px, 100%); background: var(--surface); border-radius: var(--r);
+        padding: 24px; box-shadow: var(--depth); animation: rise 0.18s ease-out;
+        margin: auto;
+      }
+      .setup.wide { width: min(680px, 100%); }
+      @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+      .setup h2 { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+      .setup > p { color: var(--muted); font-size: 13px; line-height: 1.65; margin-top: 6px; }
+      .setup code {
+        background: rgba(255, 255, 255, 0.07); padding: 1px 6px; border-radius: 6px;
+        font-family: ui-monospace, Consolas, monospace; font-size: 12px;
+      }
+      .loginbrand { display: flex; align-items: center; gap: 12px; }
+      .loginbrand .mark { width: 42px; height: 42px; }
+      .field { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+      .field label { font-size: 12px; color: var(--faint); }
+      .inputrow { display: flex; gap: 8px; }
+      input[type='text'], input[type='password'], input[type='email'], input[type='url'], input[type='time'], input:not([type]), select {
+        flex: 1; min-width: 0; height: 42px; border-radius: 12px; padding: 0 13px;
+        background: var(--bg); border: 1px solid var(--line); color: var(--fg);
+        font-size: 13.5px; font-family: inherit; outline: none; transition: border-color 0.15s;
+      }
+      select { cursor: pointer; appearance: auto; }
+      input::placeholder { color: var(--faint); }
+      input:focus, select:focus { border-color: rgba(74, 222, 128, 0.7); }
+      /* server.properties 편집기 — 키=값 이 그대로 보이도록 고정폭 글꼴을 씁니다. */
+      textarea.proptext {
+        width: 100%; min-height: 168px; resize: vertical; border-radius: 12px; padding: 11px 13px;
+        background: var(--bg); border: 1px solid var(--line); color: var(--fg);
+        font-size: 13px; font-family: Consolas, 'Courier New', monospace; line-height: 1.7;
+        outline: none; transition: border-color 0.15s; tab-size: 2;
+      }
+      textarea.proptext:focus { border-color: rgba(74, 222, 128, 0.7); }
+      .btn {
+        height: 42px; padding: 0 15px; border: 0; border-radius: 12px; cursor: pointer;
+        background: rgba(255, 255, 255, 0.07); color: var(--fg);
+        font-family: inherit; font-size: 13px; font-weight: 600;
+        transition: background 0.15s, transform 0.1s, opacity 0.15s;
+        white-space: nowrap;
+      }
+      .btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); }
+      .btn:active:not(:disabled) { transform: translateY(1px); }
+      .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+      .btn.primary { background: var(--accent); color: #07090a; }
+      .btn.primary:hover:not(:disabled) { background: #6ee7a0; }
+      .btn.ghost { background: transparent; box-shadow: inset 0 0 0 1px var(--line); color: var(--muted); }
+      .btn.ghost:hover:not(:disabled) { color: var(--fg); background: rgba(255, 255, 255, 0.05); }
+      .btn.danger {
+        background: rgba(251, 113, 133, 0.14); color: var(--danger);
+        box-shadow: inset 0 0 0 1px rgba(251, 113, 133, 0.35);
+      }
+      .btn.danger:hover:not(:disabled) { background: rgba(251, 113, 133, 0.24); }
+      .btn.sm { height: 34px; padding: 0 12px; font-size: 12.5px; border-radius: 10px; }
+      .setup .actions { display: flex; gap: 8px; align-items: center; }
+      .setup .actions .btn.primary { flex: 1; }
+      .err { color: var(--danger); font-size: 12.5px; margin-top: 10px; line-height: 1.5; }
+      .hint { color: var(--faint); font-size: 12px; margin-top: 14px; line-height: 1.7; }
+      .hint a { color: var(--accent); text-decoration: none; }
+
+      .divider {
+        display: flex; align-items: center; gap: 12px; margin-top: 16px;
+        color: var(--faint); font-size: 12px;
+      }
+      .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+      .btn.wide { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+      .btn.discord { background: rgba(88, 101, 242, 0.18); color: #c9ceff; box-shadow: inset 0 0 0 1px rgba(88, 101, 242, 0.4); }
+      .btn.discord:hover:not(:disabled) { background: rgba(88, 101, 242, 0.3); }
+      .btn.google { background: rgba(255, 255, 255, 0.08); color: var(--fg); box-shadow: inset 0 0 0 1px var(--line); }
+      .btn.google:hover:not(:disabled) { background: rgba(255, 255, 255, 0.14); }
+      .pending { color: var(--accent-2); font-size: 12.5px; margin-top: 10px; line-height: 1.5; }
+
+      .tabs { display: flex; gap: 4px; margin-top: 18px; padding: 4px; border-radius: 12px; background: rgba(255, 255, 255, 0.04); }
+      .tab {
+        flex: 1; height: 36px; border: 0; border-radius: 9px; cursor: pointer;
+        background: transparent; color: var(--muted); font-family: inherit; font-size: 13px; font-weight: 500;
+        transition: background 0.15s, color 0.15s;
+      }
+      .tab.active { background: rgba(255, 255, 255, 0.1); color: var(--fg); }
+
+      .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+      .chip {
+        padding: 8px 13px; border-radius: 11px; border: 1px solid var(--line); cursor: pointer;
+        background: var(--bg); color: var(--muted); font-family: inherit; font-size: 13px; font-weight: 500;
+        transition: border-color 0.15s, color 0.15s, background 0.15s;
+      }
+      .chip:hover { color: var(--fg); }
+      .chip.active {
+        border-color: rgba(74, 222, 128, 0.6); color: var(--accent);
+        background: rgba(74, 222, 128, 0.1);
+      }
+      .row3 { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 10px; }
+      /* 그리드 상자는 본래 최소 폭(input 기본 폭) 때문에 상자 밖으로 삐져나옵니다. */
+      .row3 > * { min-width: 0; }
+      .check {
+        display: flex; align-items: flex-start; gap: 9px; margin-top: 16px;
+        font-size: 13px; color: var(--muted); line-height: 1.6; cursor: pointer;
+      }
+      .check input { margin-top: 3px; accent-color: var(--accent); width: 15px; height: 15px; flex: none; }
+      .check a { color: var(--accent); text-decoration: none; }
+      .progress {
+        margin-top: 14px; max-height: 190px; overflow-y: auto; padding: 12px;
+        border-radius: 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--line);
+        font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+        font-size: 12px; line-height: 1.6; color: #c6d6d2; white-space: pre-wrap; word-break: break-all;
+      }
+
+      /* --- 서버 만들기 마법사 ------------------------------------------- */
+      .setup.wiz { padding: 0; overflow: hidden; }
+      .wizhead {
+        display: flex; align-items: flex-start; gap: 12px;
+        padding: 20px 16px 16px 22px;
+        border-bottom: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), transparent);
+      }
+      .wiztitle { flex: 1; min-width: 0; }
+      .wizhead h2 { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+      .wizhead p { margin-top: 7px; color: var(--muted); font-size: 12.5px; line-height: 1.65; }
+      .wizx {
+        width: 32px; height: 32px; flex: none; border: 0; border-radius: 10px;
+        background: transparent; color: var(--faint); font-size: 15px; line-height: 1; cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+      }
+      .wizx:hover { background: rgba(255, 255, 255, 0.07); color: var(--fg); }
+      .wizbody { padding: 16px 22px 6px; max-height: min(62vh, 540px); overflow-y: auto; }
+      .group {
+        border: 1px solid var(--line); border-radius: 14px;
+        background: rgba(255, 255, 255, 0.025); padding: 13px 15px 15px;
+      }
+      .group + .group, .group + .err, .group + .runpanel, .err + .runpanel { margin-top: 12px; }
+      .ghead { display: flex; align-items: center; gap: 9px; margin-bottom: 11px; }
+      .ghead .num {
+        width: 19px; height: 19px; border-radius: 7px; display: grid; place-items: center;
+        background: rgba(74, 222, 128, 0.14); color: var(--accent);
+        font-size: 11px; font-weight: 700; flex: none;
+      }
+      .ghead label { font-size: 12.5px; font-weight: 600; color: var(--fg); cursor: pointer; }
+      .gmeta { margin-left: auto; font-size: 11.5px; color: var(--faint); }
+      .gnote { margin-top: 9px; font-size: 12px; color: var(--faint); line-height: 1.6; }
+      .gnote:empty { display: none; }
+      .group .field { margin-top: 0; }
+      .group .check { margin-top: 14px; }
+      .wizfoot {
+        display: flex; gap: 8px; padding: 14px 22px 18px;
+        border-top: 1px solid var(--line); background: #0b0f11;
+      }
+      .wizfoot .btn { flex: 1; }
+      .runpanel {
+        border: 1px solid rgba(74, 222, 128, 0.3); border-radius: 14px;
+        background: rgba(74, 222, 128, 0.06); overflow: hidden;
+        animation: rise 0.18s ease-out;
+      }
+      .runbar {
+        display: flex; align-items: center; gap: 9px;
+        padding: 11px 14px; font-size: 13px; font-weight: 600; color: var(--accent);
+      }
+      .spin {
+        width: 13px; height: 13px; border-radius: 50%; flex: none;
+        border: 2px solid rgba(74, 222, 128, 0.3); border-top-color: var(--accent);
+        animation: spin 0.7s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .runpanel .progress {
+        margin: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0;
+        background: rgba(0, 0, 0, 0.45); max-height: 168px;
+      }
+
+      /* --- 본문 그리드 ---------------------------------------------------- */
+      .grid {
+        position: relative; flex: 1; min-height: 0;
+        display: grid; grid-template-columns: 300px 1fr; gap: 14px;
+      }
+      .pane {
+        background: var(--surface); border-radius: var(--r); box-shadow: var(--depth);
+        display: flex; flex-direction: column; min-height: 0; overflow: hidden;
+      }
+      .pane-head {
+        display: flex; align-items: center; gap: 8px;
+        padding: 15px 16px 12px; border-bottom: 1px solid var(--line);
+      }
+      .pane-head h2 { font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: -0.01em; }
+      .count {
+        margin-left: auto; min-width: 22px; height: 20px; padding: 0 7px; border-radius: 999px;
+        background: rgba(255, 255, 255, 0.07); color: var(--muted);
+        font-size: 11.5px; font-weight: 600; display: grid; place-items: center;
+      }
+      .newbtn {
+        margin-left: auto; height: 28px; padding: 0 11px; border-radius: 9px; border: 0; cursor: pointer;
+        background: rgba(74, 222, 128, 0.16); color: var(--accent); font-family: inherit;
+        font-size: 12.5px; font-weight: 600; transition: background 0.15s;
+      }
+      .newbtn:hover { background: rgba(74, 222, 128, 0.26); }
+      .list { flex: 1; min-height: 0; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+      .server {
+        display: flex; align-items: center; gap: 10px; padding: 11px 12px;
+        border-radius: 13px; background: rgba(255, 255, 255, 0.03);
+        cursor: pointer; text-align: left; width: 100%; border: 0;
+        font-family: inherit; color: inherit; transition: background 0.15s;
+      }
+      .server:hover { background: rgba(255, 255, 255, 0.06); }
+      .server.active { background: rgba(74, 222, 128, 0.12); box-shadow: inset 0 0 0 1px rgba(74, 222, 128, 0.28); }
+      .server .body { min-width: 0; flex: 1; }
+      .server .name { font-size: 13.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .server .meta { font-size: 11.5px; color: var(--faint); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .tag {
+        font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px;
+        background: rgba(255, 255, 255, 0.07); color: var(--muted); flex-shrink: 0;
+      }
+      .tag.on { background: rgba(74, 222, 128, 0.16); color: var(--accent); }
+      .tag.busy { background: rgba(34, 211, 238, 0.16); color: var(--accent-2); }
+      .tag.bad { background: rgba(251, 113, 133, 0.16); color: var(--danger); }
+      .tag.away { background: rgba(255, 255, 255, 0.07); color: var(--faint); }
+      .empty {
+        color: var(--faint); font-size: 13px; line-height: 1.75;
+        padding: 18px 12px; text-align: center;
+      }
+      .pane-foot {
+        padding: 12px 14px; border-top: 1px solid var(--line);
+        display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      }
+      .pane-foot a, .pane-foot button {
+        color: var(--muted); font-size: 12.5px; text-decoration: none;
+        display: inline-flex; align-items: center; gap: 6px; transition: color 0.15s;
+        background: none; border: 0; cursor: pointer; font-family: inherit; padding: 0;
+      }
+      .pane-foot a:hover, .pane-foot button:hover { color: var(--accent); }
+
+      /* --- 콘솔 ----------------------------------------------------------- */
+      .chead { display: flex; align-items: center; gap: 11px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+      .ctitle { min-width: 0; }
+      .ctitle h2 { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .ctitle p { font-size: 12px; color: var(--faint); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .acts { margin-left: auto; display: flex; gap: 7px; flex-shrink: 0; }
+      .logwrap {
+        flex: 1; min-height: 0; overflow-y: auto; background: rgba(0, 0, 0, 0.35);
+        padding: 14px 16px;
+      }
+      pre {
+        font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+        font-size: 12.5px; line-height: 1.68; white-space: pre-wrap;
+        word-break: break-word; color: #c6d6d2;
+      }
+      pre.empty { color: var(--faint); }
+      .cmdbar { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); }
+      .ctrlerr {
+        margin: 0 16px; padding: 9px 12px; border-radius: 11px;
+        background: rgba(251, 113, 133, 0.1); color: var(--danger); font-size: 12.5px;
+      }
+      .awaybox {
+        margin: 0 16px 12px; padding: 10px 12px; border-radius: 11px;
+        background: rgba(34, 211, 238, 0.08); border: 1px solid rgba(34, 211, 238, 0.25);
+        color: var(--muted); font-size: 12.5px; line-height: 1.6;
+      }
+
+      /* --- 탭 (콘솔 · 파일 · 플러그인 · 플레이어 · 월드 지도 · 접속) ------ */
+      .tabbar {
+        display: flex; gap: 4px; padding: 9px 12px; border-bottom: 1px solid var(--line);
+        overflow-x: auto; flex-shrink: 0;
+      }
+      .ptab {
+        height: 30px; padding: 0 12px; border: 0; border-radius: 9px; cursor: pointer;
+        background: transparent; color: var(--muted); font-family: inherit; font-size: 12.5px;
+        font-weight: 500; white-space: nowrap; transition: background 0.15s, color 0.15s;
+      }
+      .ptab:hover { color: var(--fg); background: rgba(255, 255, 255, 0.05); }
+      .ptab.active { background: rgba(74, 222, 128, 0.15); color: var(--accent); }
+
+      .panel {
+        flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px;
+        display: flex; flex-direction: column; gap: 12px;
+      }
+      .card {
+        background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line);
+        border-radius: 14px; padding: 14px;
+      }
+      .card + .card { margin-top: 0; }
+      .panel h3 { font-size: 13px; font-weight: 600; }
+      .sub { font-size: 12px; color: var(--faint); line-height: 1.65; margin-top: 3px; }
+      .sub b { color: var(--muted); font-weight: 500; }
+      .notice {
+        border-radius: 11px; padding: 10px 12px; font-size: 12.5px; line-height: 1.6;
+        background: rgba(251, 113, 133, 0.1); color: var(--danger);
+      }
+      .notice.info {
+        background: rgba(34, 211, 238, 0.07); color: var(--muted);
+        box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.25);
+      }
+      .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .crumbs {
+        display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0;
+        overflow-x: auto; font-size: 12.5px; color: var(--muted); white-space: nowrap;
+      }
+      .crumbs button {
+        background: none; border: 0; padding: 0; cursor: pointer; color: inherit;
+        font-family: inherit; font-size: 12.5px;
+      }
+      .crumbs button:hover { color: var(--fg); }
+      .crumbs .sep { color: var(--faint); }
+      .rowlist { display: flex; flex-direction: column; gap: 3px; }
+      .rowbtn {
+        display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 11px;
+        border: 0; border-radius: 10px; background: transparent; color: inherit;
+        font-family: inherit; font-size: 13px; cursor: pointer; text-align: left;
+        transition: background 0.15s;
+      }
+      .rowbtn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.05); }
+      .rowbtn:disabled { opacity: 0.45; cursor: not-allowed; }
+      .rowbtn .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .rowbtn .right { font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+      .ico { width: 15px; text-align: center; flex-shrink: 0; color: var(--muted); }
+      .ico.folder { color: var(--accent); }
+      .blank { font-size: 12.5px; color: var(--faint); padding: 14px 4px; text-align: center; line-height: 1.7; }
+      .loading { font-size: 12.5px; color: var(--faint); padding: 14px 4px; }
+      .editor {
+        width: 100%; min-height: 300px; resize: vertical; border-radius: 12px;
+        border: 1px solid var(--line); background: var(--bg); color: var(--fg); padding: 12px;
+        font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: 12.5px;
+        line-height: 1.6; outline: none;
+      }
+      .editor:focus { border-color: rgba(74, 222, 128, 0.7); }
+      .searchrow { display: flex; gap: 8px; align-items: center; }
+      .badges { display: flex; flex-wrap: wrap; gap: 8px; }
+      .badge {
+        display: inline-flex; align-items: center; gap: 7px; padding: 5px 6px 5px 13px;
+        border-radius: 999px; background: rgba(255, 255, 255, 0.05);
+        box-shadow: inset 0 0 0 1px var(--line); font-size: 13px;
+      }
+      .badge.ban { background: rgba(251, 113, 133, 0.1); }
+      .mini {
+        width: 26px; height: 26px; border: 0; border-radius: 50%; background: transparent;
+        color: var(--faint); cursor: pointer; display: grid; place-items: center;
+        font-family: inherit; font-size: 12px; transition: background 0.15s, color 0.15s;
+      }
+      .mini:hover { background: rgba(255, 255, 255, 0.08); color: var(--fg); }
+      .mini.danger:hover { background: rgba(251, 113, 133, 0.2); color: var(--danger); }
+      /* 사진 목업과 같은 라인 아이콘 버튼 */
+      .ibtn {
+        width: 34px; height: 34px; padding: 0; border: 0; border-radius: 10px;
+        background: rgba(255, 255, 255, 0.07); color: var(--muted); cursor: pointer;
+        display: inline-grid; place-items: center;
+        transition: background 0.15s, color 0.15s, transform 0.1s;
+      }
+      .ibtn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.12); color: var(--fg); }
+      .ibtn:active:not(:disabled) { transform: translateY(1px); }
+      .ibtn:disabled { opacity: 0.4; cursor: not-allowed; }
+      .imgbox {
+        border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #000;
+      }
+      .imgbox img { width: 100%; display: block; }
+      .addr {
+        flex: 1; min-width: 0; height: 42px; display: flex; align-items: center; padding: 0 13px;
+        border-radius: 12px; background: var(--bg); box-shadow: inset 0 0 0 1px var(--line);
+        font-family: ui-monospace, Consolas, monospace; font-size: 13px; color: var(--accent);
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .hintline { font-size: 12px; color: var(--faint); line-height: 1.7; }
+      .hintline b { color: var(--muted); font-weight: 500; }
+      .btn.xs { height: 30px; padding: 0 11px; font-size: 12px; border-radius: 9px; }
+      .busy { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--accent-2); }
+      .spin { animation: spin 1s linear infinite; display: inline-block; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      ::-webkit-scrollbar { width: 10px; height: 10px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1); border-radius: 999px;
+        border: 3px solid transparent; background-clip: padding-box;
+      }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); background-clip: padding-box; }
+
+      @media (max-width: 860px) {
+        .grid { grid-template-columns: 1fr; }
+        .acts { display: none; }
+        .row3 { grid-template-columns: 1fr; }
+        .who { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true">
+      <span class="blob blob-a"></span>
+      <span class="blob blob-b"></span>
+      <span class="bg-grid"></span>
+    </div>
+
+    <header class="top">
+      <span class="mark">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#ffb347" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 16 12 6l6 10" />
+        </svg>
+      </span>
+      <div class="brand">
+        <h1>루빗 서버 구동기</h1>
+        <p>이 PC에서 만든 서버를 웹·휴대폰과 함께 관리합니다</p>
+      </div>
+      <span class="pill" id="pill" title="연결 상태">
+        <span class="dot" id="dot"></span>
+        <span id="statusText">대기 중</span>
+      </span>
+      <span class="who" id="who" hidden></span>
+      <button type="button" class="iconbtn" id="settingsBtn" title="앱 설정" hidden>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        설정
+      </button>
+      <button type="button" class="iconbtn" id="folderBtn" title="서버 폴더 열기" hidden>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+        폴더
+      </button>
+      <button type="button" class="iconbtn" id="logoutBtn" hidden>로그아웃</button>
+    </header>
+
+    <main class="grid" id="dashboard" hidden>
+      <aside class="pane">
+        <div class="pane-head">
+          <h2>내 서버</h2>
+          <div style="margin-left: auto; display: flex; gap: 6px">
+            <button type="button" class="newbtn" id="importBtn" style="margin-left: 0" title="기존에 만들던 서버 폴더를 그대로 등록합니다">가져오기</button>
+            <button type="button" class="newbtn" id="newServerBtn" style="margin-left: 0">+ 새 서버</button>
+          </div>
+        </div>
+        <div class="list" id="servers"></div>
+        <div class="pane-foot">
+          <a href="https://lubit.kr/console" target="_blank" rel="noreferrer">웹 콘솔 열기 ↗</a>
+          <span class="count" id="serverCount">0</span>
+        </div>
+      </aside>
+
+      <section class="pane">
+        <div class="chead">
+          <span class="dot lg" id="selDot"></span>
+          <div class="ctitle">
+            <h2 id="logTitle">서버를 선택하세요</h2>
+            <p id="selMeta">왼쪽에서 서버를 고르면 로그가 나타납니다.</p>
+          </div>
+          <div class="acts" id="acts">
+            <button class="btn sm primary" id="btnStart" type="button">시작</button>
+            <button class="btn sm" id="btnStop" type="button">중지</button>
+            <button class="btn sm" id="btnRestart" type="button">재시작</button>
+            <button class="btn sm ghost" id="copyLogs" type="button" title="현재 로그 복사">복사</button>
+          </div>
+          <div class="acts" id="assignAct" hidden>
+            <button class="btn sm primary" id="assignBtn" type="button">이 PC에서 관리</button>
+          </div>
+          <button class="btn sm danger" id="deleteBtn" type="button" hidden>삭제</button>
+        </div>
+        <p class="ctrlerr" id="ctrlError" hidden></p>
+        <p class="awaybox" id="awayBox" hidden>
+          이 서버는 다른 기기에 등록되어 있습니다. <b>이 PC에서 관리</b>를 누르면 이 기기로 옮겨져 여기서 실행할 수 있습니다.
+        </p>
+        <div class="tabbar" id="tabbar" role="tablist" hidden>
+          <button class="ptab active" type="button" data-tab="console" role="tab" aria-selected="true">콘솔</button>
+          <button class="ptab" type="button" data-tab="files" role="tab">파일</button>
+          <button class="ptab" type="button" data-tab="plugins" role="tab">플러그인</button>
+          <button class="ptab" type="button" data-tab="players" role="tab">플레이어</button>
+          <button class="ptab" type="button" data-tab="map" role="tab">월드 지도</button>
+          <button class="ptab" type="button" data-tab="access" role="tab">접속</button>
+          <button class="ptab" type="button" data-tab="admins" role="tab">관리자</button>
+          <button class="ptab" type="button" data-tab="backups" role="tab">백업</button>
+          <button class="ptab" type="button" data-tab="settings" role="tab">설정</button>
+        </div>
+
+        <div class="logwrap" id="logwrap">
+          <pre id="logs" class="empty">연결되면 여기에 로그가 표시됩니다.</pre>
+        </div>
+        <form class="cmdbar" id="cmdForm">
+          <input id="cmdInput" placeholder="콘솔 명령 (예: say 안녕하세요, list, stop)" autocomplete="off" spellcheck="false" />
+          <button class="btn primary" type="submit">전송</button>
+        </form>
+
+        <div class="panel" id="panel" hidden></div>
+      </section>
+    </main>
+
+    <!-- 로그인: 로그인하지 않으면 어떤 화면도 열리지 않습니다 -->
+    <div class="overlay" id="login">
+      <section class="setup" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+        <div class="loginbrand">
+          <span class="mark">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#ffb347" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 16 12 6l6 10" />
+            </svg>
+          </span>
+          <div>
+            <h2 id="loginTitle">루빗 서버 구동기</h2>
+            <p style="margin-top: 3px">계정으로 로그인하면 이 PC의 서버를 만들고 관리할 수 있습니다</p>
+          </div>
+        </div>
+
+        <div class="tabs" role="tablist">
+          <button type="button" class="tab active" id="tabLogin" role="tab">로그인</button>
+          <button type="button" class="tab" id="tabRegister" role="tab">회원가입</button>
+        </div>
+
+        <form id="authForm">
+          <div class="field" id="nameField" hidden>
+            <label for="authName">이름 (선택)</label>
+            <input id="authName" type="text" autocomplete="nickname" placeholder="표시할 이름" />
+          </div>
+          <div class="field">
+            <label for="authEmail">이메일</label>
+            <input id="authEmail" type="email" required autocomplete="email" placeholder="you@example.com" />
+          </div>
+          <div class="field">
+            <label for="authPassword">비밀번호</label>
+            <input id="authPassword" type="password" required minlength="8" autocomplete="current-password" placeholder="8자 이상" />
+          </div>
+          <div class="actions" style="margin-top: 16px">
+            <button class="btn primary" id="authSubmit" type="submit">로그인</button>
+          </div>
+          <p class="err" id="authError" hidden></p>
+        </form>
+
+        <div class="divider" id="socialDivider"><span>또는</span></div>
+        <button type="button" class="btn wide google" id="googleBtn" style="margin-top: 14px">
+          <svg aria-hidden viewBox="0 0 24 24" width="16" height="16">
+            <path
+              fill="#4285F4"
+              d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h6.44a5.52 5.52 0 0 1-2.4 3.58v3h3.86c2.26-2.09 3.59-5.17 3.59-8.82z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96H1.29v3.09A11.99 11.99 0 0 0 12 24z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M5.27 14.29a7.2 7.2 0 0 1 0-4.58V6.62H1.29a12 12 0 0 0 0 10.76l3.98-3.09z"
+            />
+            <path
+              fill="#EA4335"
+              d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.29 6.62l3.98 3.09C6.22 6.86 8.87 4.75 12 4.75z"
+            />
+          </svg>
+          구글로 로그인
+        </button>
+        <button type="button" class="btn wide discord" id="discordBtn" style="margin-top: 10px">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M19.27 5.33A16.6 16.6 0 0 0 15.1 4l-.2.4c1.4.4 2.6 1 3.7 1.8a13.7 13.7 0 0 0-11.2 0c1.1-.8 2.3-1.4 3.7-1.8L10.9 4a16.6 16.6 0 0 0-4.17 1.33C3.7 9.3 2.9 13.2 3.3 17a16.7 16.7 0 0 0 5 2.5c.4-.55.77-1.14 1.08-1.76-.6-.22-1.17-.5-1.7-.83.14-.1.28-.22.42-.33a12 12 0 0 0 10.2 0c.14.11.28.23.42.33-.54.33-1.1.6-1.7.83.31.62.68 1.2 1.08 1.77a16.6 16.6 0 0 0 5-2.5c.5-4.45-.74-8.32-3.53-11.67ZM8.7 14.7c-.98 0-1.79-.9-1.79-2s.79-2 1.79-2c1 0 1.82.9 1.79 2 0 1.1-.79 2-1.79 2Zm6.6 0c-.98 0-1.79-.9-1.79-2s.79-2 1.79-2c1 0 1.82.9 1.79 2 0 1.1-.79 2-1.79 2Z" />
+          </svg>
+          디스코드로 로그인
+        </button>
+        <p class="pending" id="discordPending" hidden></p>
+        <p class="hint" id="socialNote" hidden>소셜 로그인은 준비 중입니다. 지금은 이메일로 가입할 수 있습니다.</p>
+
+        <p class="hint">
+          서버 만들기는 이 PC에서만 가능하고, 시작·중지·콘솔 입력은 웹과 휴대폰에서도 같은 계정으로 할 수 있습니다.<br />
+          디스코드 계정으로 로그인하려면 <a href="https://lubit.kr/console" target="_blank" rel="noreferrer">웹 콘솔</a>을 이용하세요.
+        </p>
+      </section>
+    </div>
+
+    <!-- 새 서버 마법사 -->
+    <div class="overlay" id="wizard" hidden>
+      <section class="setup wide wiz" role="dialog" aria-modal="true" aria-labelledby="wizardTitle">
+        <header class="wizhead">
+          <div class="wiztitle">
+            <h2 id="wizardTitle">새 서버 만들기</h2>
+            <p>
+              <code id="rootPath">C:\LubitServers</code> 아래에 폴더를 만들고 공식 배포처에서 파일을
+              내려받습니다.
+            </p>
+          </div>
+          <button type="button" class="wizx" id="cancelWizard" title="닫기">✕</button>
+        </header>
+
+        <div class="wizbody">
+          <div class="group">
+            <div class="ghead">
+              <span class="num">1</span>
+              <label>서버 종류 (버킷)</label>
+            </div>
+            <div class="chips" id="typeChips"></div>
+            <p class="gnote" id="typeNote"></p>
+          </div>
+
+          <div class="group">
+            <div class="ghead">
+              <span class="num">2</span>
+              <label for="version">버전</label>
+              <span class="gmeta">최신 순</span>
+            </div>
+            <div class="inputrow">
+              <select id="version"><option value="">불러오는 중…</option></select>
+              <button class="btn" id="reloadVersions" type="button">새로고침</button>
+            </div>
+          </div>
+
+          <div class="group">
+            <div class="ghead">
+              <span class="num">3</span>
+              <label>서버 설정</label>
+            </div>
+            <div class="row3">
+              <div class="field">
+                <label for="serverName">서버 이름</label>
+                <input id="serverName" type="text" placeholder="내 서버" maxlength="50" />
+              </div>
+              <div class="field">
+                <label for="memory">메모리 (MB)</label>
+                <input id="memory" type="text" inputmode="numeric" value="2048" />
+              </div>
+              <div class="field">
+                <label for="port">포트</label>
+                <input id="port" type="text" inputmode="numeric" value="25565" />
+              </div>
+            </div>
+
+            <label class="check">
+              <input type="checkbox" id="eula" />
+              <span>
+                Minecraft EULA에 동의합니다.
+                <a href="https://aka.ms/MinecraftEULA" target="_blank" rel="noreferrer">내용 보기</a>
+              </span>
+            </label>
+          </div>
+
+          <div class="group">
+            <div class="ghead">
+              <span class="num">4</span>
+              <label for="propText">server.properties</label>
+              <span class="gmeta">선택 사항</span>
+            </div>
+            <textarea id="propText" class="proptext" spellcheck="false" aria-describedby="propNote"></textarea>
+            <p class="gnote" id="propNote">
+              서버에 쓸 설정을 <code>키=값</code> 형식으로 적습니다. 한 줄에 하나씩,
+              <code>#</code> 로 시작하는 줄은 메모입니다. 포트는 위 3번 항목의 값을 따르고,
+              만든 뒤에는 파일 탭에서 언제든 고칠 수 있습니다.
+            </p>
+          </div>
+
+          <p class="err" id="wizardError" hidden></p>
+
+          <div class="runpanel" id="runPanel" hidden>
+            <div class="runbar">
+              <span class="spin" aria-hidden="true"></span>
+              <span id="runLabel">서버 파일을 내려받는 중…</span>
+            </div>
+            <pre class="progress" id="progress" hidden></pre>
+          </div>
+        </div>
+
+        <div class="wizfoot">
+          <button class="btn ghost" id="wizCloseBtn" type="button">닫기</button>
+          <button class="btn primary" id="createBtn" type="button">서버 만들기</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- 앱 설정: 자동 실행 · 서버 복원 -->
+    <div class="overlay" id="appSettings" hidden>
+      <section class="setup" role="dialog" aria-modal="true" aria-labelledby="appSettingsTitle">
+        <h2 id="appSettingsTitle">앱 설정</h2>
+        <p>이 PC에서 루빗 구동기를 어떻게 둘지 정합니다.</p>
+
+        <label class="check">
+          <input type="checkbox" id="prefAutostart" />
+          <span>
+            윈도우 시작 시 자동 실행
+            <span class="sub" style="display: block">PC 를 켜고 로그인하면 구동기가 자동으로 실행됩니다 (설치판에서만).</span>
+          </span>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="prefResume" />
+          <span>
+            앱을 켜면 이전에 돌던 서버 다시 켜기
+            <span class="sub" style="display: block">구동기를 종료할 때 실행 중이던 서버를, 다음에 켜면 자동으로 시작합니다.</span>
+          </span>
+        </label>
+
+        <p class="err" id="appSettingsError" hidden></p>
+        <div class="actions" style="margin-top: 18px">
+          <button class="btn ghost" id="appSettingsClose" type="button">닫기</button>
+          <button class="btn primary" id="appSettingsSave" type="button">저장</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- 드래그앤드롭: 기존 서버 폴더를 그대로 등록 -->
+    <div class="overlay" id="dropzone" hidden style="z-index: 40">
+      <section class="setup" style="text-align: center; border: 2px dashed rgba(74, 222, 128, 0.55); background: rgba(74, 222, 128, 0.07)">
+        <h2>서버 폴더를 여기에 놓으세요</h2>
+        <p>기존 마인크래프트 서버 폴더를 그대로 등록합니다 — 파일은 옮기지 않습니다.</p>
+      </section>
+    </div>
+
+    <script src="renderer.js"></script>
+  </body>
+</html>

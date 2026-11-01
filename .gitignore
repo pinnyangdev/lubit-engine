@@ -1,0 +1,30 @@
+node_modules
+dist
+.wrangler
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+# VPS 에서 쓰는 실서비스 시크릿
+.env
+!.env.example
+.DS_Store
+*.log
+# VPS 이전용 내보낸 SQL · SQLite 파일 (실제 계정 데이터가 들어 있습니다)
+data/
+
+# VPS 전송용 zip · 묶을 때 쓰는 임시 폴더
+lubit-web.zip
+.vps-package/
+.vps-test/
+
+# 데스크톱 앱 설치 파일 빌드 결과물 (electron-builder)
+agent/release/
+# 위 release 파일을 20MB 로 쪼갠 사이트 배포본 — 매 빌드 다시 생성됩니다
+public/download/
+
+# 안드로이드 서명 키와 암호 (커밋 금지)
+android/keystore/
+android/keystore.properties
+
+# GitHub 토큰 — CI 가 릴리스를 게시할 때만 로컬에서 씁니다
+.gh-token

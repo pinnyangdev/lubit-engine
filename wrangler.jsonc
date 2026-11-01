@@ -1,0 +1,26 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lubit",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-09-29",
+  // 커스텀 도메인: 라우트가 붙으면 wrangler 가 해당 도메인의 DNS 레코드까지
+  // 알아서 만들어 줍니다. 존(zone)이 이 계정에 등록돼 있어야 합니다.
+  "routes": [{ "pattern": "lubit.kr", "custom_domain": true }],
+  // 커스텀 도메인만 남기면 workers.dev 주소가 꺼지므로 예비용으로 남겨둡니다.
+  "workers_dev": true,
+  "assets": {
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+  // 문의 접수함과 채팅 내역을 보관합니다. 로컬 개발에서는 .wrangler/ 아래에
+  // 로컬 DB가 만들어지고, 배포 시에는 사이트의 D1으로 교체됩니다.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "lubit",
+      "database_id": "137ac72c-da84-4433-9ec7-22dd952b2b8c"
+    }
+  ],
+  "observability": { "enabled": true }
+}

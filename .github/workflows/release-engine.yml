@@ -1,0 +1,205 @@
+name: Release engine
+
+# 구동기(데스크톱 앱) 빌드와 게시를 자동화합니다.
+#
+#   태그 push :  agent/package.json 의 버전을 v{버전} 태그로 올리면 그 버전을 빌드·게시합니다.
+#   수동 실행 :  Actions 탭에서 Run workflow — package.json 의 현재 버전으로 빌드·게시합니다.
+#
+# 게시 대상은 agent/package.json 의 build.publish (github: pinnyangdev/lubit-engine) 입니다.
+# 이 저장소와 게시 대상이 다르면 Settings → Secrets 에서 ENGINE_GH_TOKEN
+# (해당 저장소 contents:write 권한의 fine-grained token) 을 등록하세요.
+# 같은 저장소라면 내장 GITHUB_TOKEN 으로도 동작합니다.
+#
+# 게시가 끝나면 GitHub 릴리스에 setup exe · dmg · blockmap · latest.yml 이 올라가고,
+# 설치된 구동기는 최대 1시간 안에 자동 업데이트를 받습니다.
+#
+# Windows 는 windows-latest, macOS 는 macos-latest (둘 다 GitHub 호스팅 runner) 에서
+# 빌드합니다 — dmg 는 macOS 에서만 빌드할 수 있습니다. runner 준비 없이
+# 소스가 저장소에 올라가기만 하면 그대로 동작합니다.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-engine
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # 릴리스 노트를 만들 때 이전 태그까지의 커밋이 필요합니다.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: agent/package-lock.json
+
+      # 태그로 실행했을 때만: 태그와 버전이 어긋나면 틀린 버전이 릴리스되는 사고를 막습니다.
+      - name: 태그와 버전 확인
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $version = (Get-Content agent/package.json -Raw | ConvertFrom-Json).version
+          $tag = "${{ github.ref_name }}"
+          if ($tag -ne "v$version") {
+            throw "태그 '$tag' 가 agent/package.json 버전 'v$version' 과 다릅니다. 버전을 올리고 다시 태그하세요."
+          }
+
+      - name: 의존성 설치
+        working-directory: agent
+        run: npm ci
+
+      # smoke-main.cjs(창 없이 main.js 검사) 후 electron-builder 가 빌드하고 --publish always 로 게시합니다.
+      # 코드 서명이 없으면 Windows 스마트스크린 경고는 그대로입니다 — 서명 키가 생기면 여기에 연결하세요.
+      - name: 빌드 · 게시
+        working-directory: agent
+        env:
+          GH_TOKEN: ${{ secrets.ENGINE_GH_TOKEN || secrets.GITHUB_TOKEN }}
+        run: npm run release
+
+      # 릴리스 노트 — 이전 태그 이후 커밋 제목을 그대로 올립니다.
+      # lubit.kr/changelog 페이지가 이 내용을 그대로 읽어 보여 줍니다.
+      - name: 릴리스 노트 채우기
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.ENGINE_GH_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          prev=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
+          {
+            echo "루빗 서버 구동기 ${GITHUB_REF_NAME} 릴리스입니다."
+            echo
+            git log --pretty='- %s' ${prev:+$prev..}HEAD
+          } > notes.md
+          gh release edit "${GITHUB_REF_NAME}" --notes-file notes.md
+
+  # 맥용 dmg · zip — 코드 서명 없이 빌드하므로 Gatekeeper 는 설치 시 우클릭-열기 로 확인합니다.
+  # needs 로 Windows 게시가 끝난 뒤에 실행합니다 — 두 잡이 동시에 --publish always 로
+  # 릴리스를 만들려다 태그 경합(422)으로 mac 이 매번 한 번씩 실패하는 것을 막기 위함입니다.
+  mac:
+    needs: release
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: agent/package-lock.json
+
+      - name: 태그와 버전 확인
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          version=$(node -p "require('./agent/package.json').version")
+          if [ "${{ github.ref_name }}" != "v$version" ]; then
+            echo "태그 '${{ github.ref_name }}' 가 버전 'v$version' 과 다릅니다."; exit 1
+          fi
+
+      - name: 의존성 설치
+        working-directory: agent
+        run: npm ci
+
+      - name: 빌드 · 게시 (macOS)
+        working-directory: agent
+        env:
+          GH_TOKEN: ${{ secrets.ENGINE_GH_TOKEN || secrets.GITHUB_TOKEN }}
+        run: npm run release:mac
+
+  # iOS IPA — Capacitor 프로젝트(ios/App)를 아카이브해 IPA 를 만듭니다.
+  # 빌드 자체는 무료이고, 서명에만 Apple 개발자 계정이 필요합니다.
+  # Settings > Secrets and variables > Actions 에 등록할 것:
+  #   APPLE_TEAM_ID     개발자 계정의 Team ID
+  #   IOS_CERT_P12      인증서 .p12 (base64)
+  #   IOS_CERT_PASSWORD 그 .p12 비밀번호
+  #   IOS_PROFILE       프로파일 .mobileprovision (base64)
+  # Secrets 가 아직 없으면 이 잡만 조용히 건너뜁니다 — 워크플로 전체는 실패하지 않습니다.
+  ipa:
+    needs: release
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: agent/package-lock.json
+
+      - name: 서명 Secrets 확인
+        id: sig
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -z "$TEAM" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "APPLE_TEAM_ID 가 없어 IPA 빌드를 건너뜁니다 — Secrets 등록 후 다시 실행하세요."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 웹 빌드 · Capacitor 동기화
+        if: steps.sig.outputs.ready == 'true'
+        run: |
+          npm ci
+          npm run build
+          npx cap sync ios
+
+      - name: 인증서 설치
+        if: steps.sig.outputs.ready == 'true'
+        uses: apple-actions/import-codesign-certs@v2
+        with:
+          p12-file-base64: ${{ secrets.IOS_CERT_P12 }}
+          p12-password: ${{ secrets.IOS_CERT_PASSWORD }}
+
+      - name: 프로파일 설치
+        if: steps.sig.outputs.ready == 'true'
+        env:
+          PROFILE: ${{ secrets.IOS_PROFILE }}
+        run: |
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          echo "$PROFILE" | base64 --decode > "$HOME/Library/MobileDevice/Provisioning Profiles/lubit.mobileprovision"
+
+      - name: 아카이브 · IPA 내보내기
+        if: steps.sig.outputs.ready == 'true'
+        run: |
+          cat > ExportOptions.plist <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store</string>
+            <key>teamID</key><string>${{ secrets.APPLE_TEAM_ID }}</string>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -destination "generic/platform=iOS" -archivePath build/App.xcarchive archive CODE_SIGN_STYLE=Manual
+          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportPath build -exportOptionsPlist ExportOptions.plist
+
+      - name: IPA 산출물 보관
+        if: steps.sig.outputs.ready == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lubit-ios-ipa
+          path: build/*.ipa
+
+      - name: 릴리스에 IPA 첨부
+        if: steps.sig.outputs.ready == 'true' && startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/*.ipa

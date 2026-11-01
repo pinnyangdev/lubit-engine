@@ -1,0 +1,111 @@
+{
+  "name": "lubit-engine-agent",
+  "version": "0.1.14",
+  "private": true,
+  "description": "루빗 서버 구동기 에이전트 — 내 PC에서 마크 서버를 실행하고 웹 콘솔에 연결합니다.",
+  "productName": "루빗 서버 구동기",
+  "main": "main.js",
+  "author": {
+    "name": "lubit",
+    "url": "https://lubit.kr"
+  },
+  "scripts": {
+    "start": "electron .",
+    "agent": "node core.js",
+    "icons": "powershell -NoProfile -ExecutionPolicy Bypass -File ../scripts/gen-icons.ps1",
+    "dist": "node smoke-main.cjs && electron-builder --win",
+    "release": "node ../scripts/release.mjs && node smoke-main.cjs && electron-builder --win --publish always && node ../scripts/discord-notify.mjs",
+    "release:mac": "node ../scripts/release.mjs && node smoke-main.cjs && electron-builder --mac --publish always && node ../scripts/discord-notify.mjs"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "kr.lubit.serverengine",
+    "copyright": "© lubit",
+    "npmRebuild": false,
+    "publish": {
+      "provider": "github",
+      "owner": "pinnyangdev",
+      "repo": "lubit-engine",
+      "releaseType": "release"
+    },
+    "compression": "normal",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "core.js",
+      "provision.js",
+      "backup.js",
+      "prefs.js",
+      "import.js",
+      "zip.js",
+      "java.js",
+      "files.js",
+      "plugins.js",
+      "map.js",
+      "nbt.js",
+      "relay.js",
+      "protocol.js",
+      "renderer.html",
+      "renderer.js",
+      "dialog.html",
+      "tray.png",
+      "package.json"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "executableName": "LubitServerEngine",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "artifactName": "LubitServerEngine-${version}-mac.${ext}",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "루빗 서버 구동기",
+      "uninstallDisplayName": "루빗 서버 구동기",
+      "artifactName": "LubitServerEngine-Setup-${version}.exe",
+      "language": "1042",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
+    }
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  }
+}

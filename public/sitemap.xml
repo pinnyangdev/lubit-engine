@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  구글 서치 콘솔에 등록하는 사이트맵입니다.
+  public/ 에두면 빌드 때 그대로 dist/client/sitemap.xml 이 되어 https://lubit.kr/sitemap.xml 으로 나옵니다.
+
+  경로는 src/App.tsx 의 라우트와 정확히 맞췄습니다.
+  · 서비스(slug)      : mc-server / outsourcing / client / engine / bot / website
+  · 그 외 공개 페이지 : mc-server/join · console · changelog · support · terms · privacy · refund
+  · 뺀 것            : /support/inbox · /admin  — 비밀번호로 여는 staff 페이지라 검색에 걸리면 안 됩니다.
+
+  lastmod 를 적지 않은 이유: 모든 페이지가 한 번의 빌드로 만들어지는데
+  페이지마다 날짜를 적으면 사실이 아니어서, 틀린 날짜보다 없는 편이 낫습니다.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://lubit.kr/</loc></url>
+  <url><loc>https://lubit.kr/mc-server</loc></url>
+  <url><loc>https://lubit.kr/mc-server/join</loc></url>
+  <url><loc>https://lubit.kr/outsourcing</loc></url>
+  <url><loc>https://lubit.kr/client</loc></url>
+  <url><loc>https://lubit.kr/engine</loc></url>
+  <url><loc>https://lubit.kr/bot</loc></url>
+  <url><loc>https://lubit.kr/website</loc></url>
+  <url><loc>https://lubit.kr/console</loc></url>
+  <url><loc>https://lubit.kr/changelog</loc></url>
+  <url><loc>https://lubit.kr/support</loc></url>
+  <url><loc>https://lubit.kr/terms</loc></url>
+  <url><loc>https://lubit.kr/privacy</loc></url>
+  <url><loc>https://lubit.kr/refund</loc></url>
+</urlset>
