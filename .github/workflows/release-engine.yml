@@ -1,0 +1,94 @@
+name: Release engine
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-engine
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: agent/package-lock.json
+
+      - name: 태그와 버전 확인
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        run: |
+          $version = (Get-Content agent/package.json -Raw | ConvertFrom-Json).version
+          $tag = "${{ github.ref_name }}"
+          if ($tag -ne "v$version") {
+            throw "태그 '$tag' 가 agent/package.json 버전 'v$version' 과 다릅니다. 버전을 올리고 다시 태그하세요."
+          }
+
+      - name: 의존성 설치
+        working-directory: agent
+        run: npm ci
+
+      - name: 빌드 · 게시
+        working-directory: agent
+        env:
+          GH_TOKEN: ${{ secrets.ENGINE_GH_TOKEN || secrets.GITHUB_TOKEN }}
+        run: npm run release
+
+      - name: 릴리스 노트 채우기
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.ENGINE_GH_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          prev=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
+          {
+            echo "루빗 서버 구동기 ${GITHUB_REF_NAME} 릴리스입니다."
+            echo
+            git log --pretty='- %s' ${prev:+$prev..}HEAD
+          } > notes.md
+          gh release edit "${GITHUB_REF_NAME}" --notes-file notes.md
+
+  mac:
+    needs: release
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: agent/package-lock.json
+
+      - name: 태그와 버전 확인
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          version=$(node -p "require('./agent/package.json').version")
+          if [ "${{ github.ref_name }}" != "v$version" ]; then
+            echo "태그 '${{ github.ref_name }}' 가 버전 'v$version' 과 다릅니다."; exit 1
+          fi
+
+      - name: 의존성 설치
+        working-directory: agent
+        run: npm ci
+
+      - name: 빌드 · 게시 (macOS)
+        working-directory: agent
+        env:
+          GH_TOKEN: ${{ secrets.ENGINE_GH_TOKEN || secrets.GITHUB_TOKEN }}
+        run: npm run release:mac
