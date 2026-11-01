@@ -26,16 +26,20 @@ function run(command, args, env = {}) {
 
 // JDK 21 이상을 찾습니다. (Capacitor 안드로이드 라이브러리가 source 21 을 씁니다)
 function findJdk() {
-  if (process.env.JAVA_HOME && existsSync(join(process.env.JAVA_HOME, 'bin', 'javac.exe'))) {
+  const win = process.platform === 'win32'
+  const javacBin = win ? 'javac.exe' : 'javac'
+  if (process.env.JAVA_HOME && existsSync(join(process.env.JAVA_HOME, 'bin', javacBin))) {
     return process.env.JAVA_HOME
   }
   const candidates = []
-  const roots = ['C:\\Program Files\\Java', join(process.env.LOCALAPPDATA ?? '', 'Java')]
+  const roots = win
+    ? ['C:\\Program Files\\Java', join(process.env.LOCALAPPDATA ?? '', 'Java')]
+    : ['/usr/lib/jvm', '/usr/java']
   for (const dir of roots) {
     if (!existsSync(dir)) continue
     for (const name of readdirSync(dir)) candidates.push(join(dir, name))
   }
-  const usable = candidates.filter((dir) => existsSync(join(dir, 'bin', 'javac.exe')))
+  const usable = candidates.filter((dir) => existsSync(join(dir, 'bin', javacBin)))
   const modern = usable.filter((dir) => {
     const match = /jdk[-.]?(\d+)/i.exec(dir.split(/[\\/]/).pop() ?? '')
     return match && Number(match[1]) >= 21
