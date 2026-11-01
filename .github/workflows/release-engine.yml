@@ -240,6 +240,7 @@ jobs:
           GH_TOKEN: ${{ secrets.ENGINE_GH_TOKEN || secrets.GITHUB_TOKEN }}
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
+          chmod +x android/gradlew
           npm ci
           npm run build
           node scripts/build-apk.mjs
