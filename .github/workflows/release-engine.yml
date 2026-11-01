@@ -213,3 +213,34 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: build/*.ipa
+
+  # Android APK — scripts/build-apk.mjs 로 웹 자산을 동기화하고
+  # gradle assembleRelease 로 APK 를 만든 뒤 릴리스에 올립니다.
+  apk:
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: 빌드 · 게시 (APK)
+        env:
+          GH_TOKEN: ${{ secrets.ENGINE_GH_TOKEN || secrets.GITHUB_TOKEN }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          npm ci
+          npm run build
+          node scripts/build-apk.mjs
+          TAG="v$(node -p "require('./package.json').version")"
+          gh release upload "$TAG" agent/release/*.apk --clobber
+          echo "APK 업로드 완료 — $TAG"
