@@ -1,14 +1,13 @@
 @echo off
-chcp 65001 >nul
-title ë£¨ë¹— - VPS ë°°í¬
-:: ì´ íŒŒì¼ì€ VPS ì—ì„œ ì‹¤í–‰í•©ë‹ˆë‹¤. ZIP ì„ í‘¼ í´ë” ì•ˆì— ë‘ë©´ ê·¸ í´ë” ê¸°ì¤€ìœ¼ë¡œ ë•ë‹ˆë‹¤.
+title ·çºø - VPS ¹èÆ÷
+:: ÀÌ ÆÄÀÏÀº VPS ¿¡¼­ ½ÇÇàÇÕ´Ï´Ù. ZIP À» Ç¬ Æú´õ ¾È¿¡ µÎ¸é ±× Æú´õ ±âÁØÀ¸·Î µ½´Ï´Ù.
 
 echo ==========================================
-echo   VPS ë°°í¬ - ì†ŒìŠ¤ ë³µì‚¬ Â· ë¹Œë“œ Â· ì„œë²„ ì¬ì‹œì‘
+echo   VPS ¹èÆ÷ - ¼Ò½º º¹»ç ¡¤ ºôµå ¡¤ ¼­¹ö Àç½ÃÀÛ
 echo ==========================================
 echo.
-echo   ëŒ€ìƒ  : C:\LubitWeb  (ê¸°ì¡´ .env ì™€ data ëŠ” ê·¸ëŒ€ë¡œ ìœ ì§€ë©ë‹ˆë‹¤)
-echo   ë‹¨ê³„  : ì†ŒìŠ¤ ë³µì‚¬ - npm ci - vite build - ì„œë²„ ì¬ì‹œì‘ - í—¬ìŠ¤ì²´í¬
+echo   ´ë»ó  : C:\LubitWeb  (±âÁ¸ .env ¿Í data ´Â ±×´ë·Î À¯ÁöµË´Ï´Ù)
+echo   ´Ü°è  : ¼Ò½º º¹»ç - npm ci - vite build - ¼­¹ö Àç½ÃÀÛ - Çï½ºÃ¼Å©
 echo.
 
 set SCRIPT=%~dp0scripts\deploy-vps.ps1
@@ -17,7 +16,7 @@ if not exist "%SCRIPT%" goto nofile
 
 where pwsh >nul 2>&1
 if errorlevel 1 (
-    echo   pwsh ê°€ ì—†ì–´ powershell ë¡œ ì‹¤í–‰í•©ë‹ˆë‹¤.
+    echo   pwsh °¡ ¾ø¾î powershell ·Î ½ÇÇàÇÕ´Ï´Ù.
     powershell -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT%"
 ) else (
     pwsh -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT%"
@@ -26,21 +25,21 @@ if errorlevel 1 goto fail
 
 echo.
 echo ==========================================
-echo   ì™„ë£Œ
-echo   í™•ì¸: curl https://lubit.kr/api/health
+echo   ¿Ï·á
+echo   È®ÀÎ: curl https://lubit.kr/api/health
 echo         https://lubit.kr/sitemap.xml
 echo ==========================================
 pause
 exit /b 0
 
 :nofile
-echo [ì˜¤ë¥˜] scripts\deploy-vps.ps1 ì„ ì°¾ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.
-echo        ZIP ì„ í‘¼ í´ë” ì•ˆì—ì„œ ì´ ë°°ì¹˜ íŒŒì¼ì„ ì‹¤í–‰í•˜ì„¸ìš”.
+echo [¿À·ù] scripts\deploy-vps.ps1 À» Ã£Áö ¸øÇß½À´Ï´Ù.
+echo        ZIP À» Ç¬ Æú´õ ¾È¿¡¼­ ÀÌ ¹èÄ¡ ÆÄÀÏÀ» ½ÇÇàÇÏ¼¼¿ä.
 pause
 exit /b 1
 
 :fail
 echo.
-echo [ì‹¤íŒ¨] ìœ„ ì˜¤ë¥˜ë¥¼ í™•ì¸í•˜ì„¸ìš”. ì„œë²„ê°€ ì•ˆ ëœ¨ë©´ C:\LubitWeb\server.log ë¥¼ ë³´ì„¸ìš”.
+echo [½ÇÆĞ] À§ ¿À·ù¸¦ È®ÀÎÇÏ¼¼¿ä. ¼­¹ö°¡ ¾È ¶ß¸é C:\LubitWeb\server.log ¸¦ º¸¼¼¿ä.
 pause
 exit /b 1

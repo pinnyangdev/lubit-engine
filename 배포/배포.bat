@@ -1,45 +1,44 @@
 @echo off
-chcp 65001 >nul
-title ë£¨ë¹— - VPS íŒ¨í‚¤ì§€ ë§Œë“¤ê¸°
+title ·çºø - VPS ÆÐÅ°Áö ¸¸µé±â
 cd /d "%~dp0.."
 set OUT=lubit-web.zip
 
 echo ==========================================
-echo   VPS ì—…ë¡œë“œìš© ZIP ë§Œë“¤ê¸°
-echo   íŒŒì¼: %OUT%
+echo   VPS ¾÷·Îµå¿ë ZIP ¸¸µé±â
+echo   ÆÄÀÏ: %OUT%
 echo ==========================================
 echo.
-echo ë“¤ì–´ê°€ëŠ” ê²ƒ : git ì— ë“±ë¡ëœ ì†ŒìŠ¤ ì „ë¶€
-echo ë¹ ì§€ëŠ” ê²ƒ   : .env .dev.vars node_modules data dist .git .wrangler *.log
-echo               (VPS ì˜ C:\LubitWeb ì—ëŠ” ê¸°ì¡´ ì„¤ì •ê³¼ ë°ì´í„°ê°€ ê·¸ëŒ€ë¡œ ë‚¨ìŠµë‹ˆë‹¤)
+echo µé¾î°¡´Â °Í : git ¿¡ µî·ÏµÈ ¼Ò½º ÀüºÎ
+echo ºüÁö´Â °Í   : .env .dev.vars node_modules data dist .git .wrangler *.log
+echo               (VPS ÀÇ C:\LubitWeb ¿¡´Â ±âÁ¸ ¼³Á¤°ú µ¥ÀÌÅÍ°¡ ±×´ë·Î ³²½À´Ï´Ù)
 echo.
 
-:: ì»¤ë°‹í•˜ì§€ ì•Šì€ ë³€ê²½ì´ ìžˆìœ¼ë©´ ZIP ì— ë¹ ì§€ëŠ” ê²ƒì„ ì•Œë¦½ë‹ˆë‹¤.
+:: Ä¿¹ÔÇÏÁö ¾ÊÀº º¯°æÀÌ ÀÖÀ¸¸é ZIP ¿¡ ºüÁö´Â °ÍÀ» ¾Ë¸³´Ï´Ù.
 for /f %%i in ('git status --porcelain') do set DIRTY=1
 if defined DIRTY (
-    echo [ì£¼ì˜] ì»¤ë°‹í•˜ì§€ ì•Šì€ ë³€ê²½ì´ ìžˆìŠµë‹ˆë‹¤ - ZIP ì—ëŠ” ë¹ ì§‘ë‹ˆë‹¤.
+    echo [ÁÖÀÇ] Ä¿¹ÔÇÏÁö ¾ÊÀº º¯°æÀÌ ÀÖ½À´Ï´Ù - ZIP ¿¡´Â ºüÁý´Ï´Ù.
     git status --short
     echo.
 )
 
 if exist "%OUT%" del "%OUT%"
 
-:: git archive ëŠ” ì¶”ì  ì¤‘ì¸ íŒŒì¼ë§Œ ë‹´ìœ¼ë¯€ë¡œ ë¹„ë°€ì´ ìžë™ìœ¼ë¡œ ë¹ ì§‘ë‹ˆë‹¤.
+:: git archive ´Â ÃßÀû ÁßÀÎ ÆÄÀÏ¸¸ ´ãÀ¸¹Ç·Î ºñ¹ÐÀÌ ÀÚµ¿À¸·Î ºüÁý´Ï´Ù.
 git archive --format=zip -o "%OUT%" HEAD
 if errorlevel 1 goto fail
 
-for %%A in ("%OUT%") do echo [ì™„ë£Œ] %%~zA bytes  ^(%%~zA / 1024 / 1024 MB ë‹¨ìœ„ëŠ” ì•„ëž˜ ì°¸ì¡°^)
+for %%A in ("%OUT%") do echo [¿Ï·á] %%~zA bytes  ^(%%~zA / 1024 / 1024 MB ´ÜÀ§´Â ¾Æ·¡ ÂüÁ¶^)
 powershell -NoProfile -Command "(Get-Item '%OUT%').Length / 1MB | ForEach-Object { '        ' + [math]::Round($_,1) + ' MB' }"
 echo.
-echo ë‹¤ìŒ ë‹¨ê³„:
-echo   1) %OUT% ë¥¼ VPS ë¡œ ë³µì‚¬
-echo   2) VPS ì—ì„œ ì••ì¶• í‘¼ ë’¤ VPSë°°í¬.bat ì‹¤í–‰
+echo ´ÙÀ½ ´Ü°è:
+echo   1) %OUT% ¸¦ VPS ·Î º¹»ç
+echo   2) VPS ¿¡¼­ ¾ÐÃà Ç¬ µÚ VPS¹èÆ÷.bat ½ÇÇà
 echo.
 pause
 exit /b 0
 
 :fail
 echo.
-echo [ì‹¤íŒ¨] git archive ì˜¤ë¥˜ë¥¼ í™•ì¸í•˜ì„¸ìš”
+echo [½ÇÆÐ] git archive ¿À·ù¸¦ È®ÀÎÇÏ¼¼¿ä
 pause
 exit /b 1

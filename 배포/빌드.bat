@@ -1,36 +1,35 @@
 @echo off
-chcp 65001 >nul
-title ë£¨ë¹— - ë¹Œë“œ
+title ·çºø - ºôµå
 cd /d "%~dp0.."
 echo ==========================================
-echo   ë£¨ë¹— ì›¹ì‚¬ì´íŠ¸ ë¹Œë“œ
-echo   ìœ„ì¹˜: %cd%
+echo   ·çºø À¥»çÀÌÆ® ºôµå
+echo   À§Ä¡: %cd%
 echo ==========================================
 echo.
 
-echo [1/3] ì˜ì¡´ì„± í™•ì¸
+echo [1/3] ÀÇÁ¸¼º È®ÀÎ
 if exist node_modules (
-    echo       node_modules ìˆìŒ - ê±´ë„ˆëœë‹ˆë‹¤
+    echo       node_modules ÀÖÀ½ - °Ç³Ê¶İ´Ï´Ù
 ) else (
-    echo       npm ci ì‹¤í–‰
+    echo       npm ci ½ÇÇà
     call npm ci
     if errorlevel 1 goto fail
 )
 echo.
 
-echo [2/3] íƒ€ì… ê²€ì‚¬
+echo [2/3] Å¸ÀÔ °Ë»ç
 call npm run typecheck
 if errorlevel 1 goto fail
 echo.
 
-echo [3/3] ì›¹ ë¹Œë“œ
+echo [3/3] À¥ ºôµå
 call npm run build
 if errorlevel 1 goto fail
 echo.
 
 echo ==========================================
-echo   ì™„ë£Œ - dist\client ì— ë§Œë“¤ì–´ì¡ŒìŠµë‹ˆë‹¤
-echo   ì‚¬ì´íŠ¸ë§µ: dist\client\sitemap.xml
+echo   ¿Ï·á - dist\client ¿¡ ¸¸µé¾îÁ³½À´Ï´Ù
+echo   »çÀÌÆ®¸Ê: dist\client\sitemap.xml
 echo ==========================================
 pause
 exit /b 0
@@ -38,7 +37,7 @@ exit /b 0
 :fail
 echo.
 echo ==========================================
-echo   ì‹¤íŒ¨ - ìœ„ ì˜¤ë¥˜ ë©”ì‹œì§€ë¥¼ í™•ì¸í•˜ì„¸ìš”
+echo   ½ÇÆĞ - À§ ¿À·ù ¸Ş½ÃÁö¸¦ È®ÀÎÇÏ¼¼¿ä
 echo ==========================================
 pause
 exit /b 1
