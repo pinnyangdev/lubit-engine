@@ -1,25 +1,25 @@
 @echo off
-title ·çºø - VPS ÆĞÅ°Áö ¸¸µé±â
+title ï¿½ï¿½ï¿½ - VPS ï¿½ï¿½Å°ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
 cd /d "%~dp0.."
 
 if not exist .git goto nogit
 
 if exist lubit-web.zip del lubit-web.zip
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $l = @(git ls-files) | Where-Object { $_ }; Compress-Archive -Path $l -DestinationPath 'lubit-web.zip' -Force; $z = Get-Item 'lubit-web.zip'; Write-Host ('[¿Ï·á] lubit-web.zip  ' + [math]::Round($z.Length/1MB,1) + ' MB'); $h = Select-String -Path 'lubit-web.zip' -Pattern 'changelog' -Quiet; Write-Host ('  ¼Ò½º ÆÄÀÏ ¼ö: ' + $l.Count)"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "[Console]::OutputEncoding=[Text.Encoding]::UTF8; $l=@(git -c core.quotepath=false ls-files) | Where-Object { $_ }; Compress-Archive -Path $l -DestinationPath 'lubit-web.zip' -Force; $z=Get-Item 'lubit-web.zip'; Write-Host ('[ì™„ë£Œ] lubit-web.zip '+[math]::Round($z.Length/1MB,1)+' MB / íŒŒì¼ '+$l.Count+' ê°œ')"
 if errorlevel 1 goto fail
 
 echo.
-echo VPS·Î º¹»çÇÑ µÚ ¾ĞÃàÀ» Ç®°í VPS¹èÆ÷.bat ¸¦ ½ÇÇàÇÏ¼¼¿ä.
+echo VPSï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ç®ï¿½ï¿½ VPSï¿½ï¿½ï¿½ï¿½.bat ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï¼ï¿½ï¿½ï¿½.
 pause
 exit /b 0
 
 :nogit
-echo [¿À·ù] git ÀúÀå¼Ò Æú´õ¿¡¼­¸¸ ½ÇÇàÇÒ ¼ö ÀÖ½À´Ï´Ù.
+echo [ï¿½ï¿½ï¿½ï¿½] git ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ö½ï¿½ï¿½Ï´ï¿½.
 pause
 exit /b 1
 
 :fail
-echo [½ÇÆĞ] À§ ¸Ş½ÃÁö¸¦ È®ÀÎÇÏ¼¼¿ä.
+echo [ï¿½ï¿½ï¿½ï¿½] ï¿½ï¿½ ï¿½Ş½ï¿½ï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½Ï¼ï¿½ï¿½ï¿½.
 pause
 exit /b 1
