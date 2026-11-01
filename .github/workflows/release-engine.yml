@@ -138,6 +138,8 @@ jobs:
   #   IOS_PROFILE       프로파일 .mobileprovision (base64)
   # Secrets 가 아직 없으면 이 잡만 조용히 건너뜁니다 — 워크플로 전체는 실패하지 않습니다.
   ipa:
+    if: false   # IPA — Apple 인증서 Secrets 미등록이라 잠시 중단 (Secrets 넣고 이 줄만 지우면 다시 켜집니다)
+
     needs: release
     runs-on: macos-latest
     timeout-minutes: 45
