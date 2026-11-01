@@ -20,7 +20,7 @@ export const nav = {
     { label: '변경점', href: '/changelog' },
     { label: '문의', href: '/support' },
   ],
-  signIn: { label: '디스코드', href: '#' },
+  signIn: { label: '디스코드', href: 'https://discord.gg/3tpscUy32u' },
   cta: { label: '견적 문의', href: '/support' },
 }
 
