@@ -1,0 +1,21 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-vps
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, Windows, lubit-vps]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 동기화 · 빌드 · 재시작
+        shell: pwsh
+        run: ./scripts/deploy-vps.ps1
