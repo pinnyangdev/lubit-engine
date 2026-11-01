@@ -1,44 +1,25 @@
 @echo off
-title ·çºø - VPS ÆĞÅ°Áö ¸¸µé±â
+titleë£¨ë¹— - VPS íŒ¨í‚¤ì§€ ë§Œë“¤ê¸°
 cd /d "%~dp0.."
-set OUT=lubit-web.zip
 
-echo ==========================================
-echo   VPS ¾÷·Îµå¿ë ZIP ¸¸µé±â
-echo   ÆÄÀÏ: %OUT%
-echo ==========================================
-echo.
-echo µé¾î°¡´Â °Í : git ¿¡ µî·ÏµÈ ¼Ò½º ÀüºÎ
-echo ºüÁö´Â °Í   : .env .dev.vars node_modules data dist .git .wrangler *.log
-echo               (VPS ÀÇ C:\LubitWeb ¿¡´Â ±âÁ¸ ¼³Á¤°ú µ¥ÀÌÅÍ°¡ ±×´ë·Î ³²½À´Ï´Ù)
-echo.
+if not exist .git goto nogit
 
-:: Ä¿¹ÔÇÏÁö ¾ÊÀº º¯°æÀÌ ÀÖÀ¸¸é ZIP ¿¡ ºüÁö´Â °ÍÀ» ¾Ë¸³´Ï´Ù.
-for /f %%i in ('git status --porcelain') do set DIRTY=1
-if defined DIRTY (
-    echo [ÁÖÀÇ] Ä¿¹ÔÇÏÁö ¾ÊÀº º¯°æÀÌ ÀÖ½À´Ï´Ù - ZIP ¿¡´Â ºüÁı´Ï´Ù.
-    git status --short
-    echo.
-)
+if exist lubit-web.zip del lubit-web.zip
 
-if exist "%OUT%" del "%OUT%"
-
-:: git archive ´Â ÃßÀû ÁßÀÎ ÆÄÀÏ¸¸ ´ãÀ¸¹Ç·Î ºñ¹ĞÀÌ ÀÚµ¿À¸·Î ºüÁı´Ï´Ù.
-git archive --format=zip -o "%OUT%" HEAD
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; $l = @(git ls-files) | Where-Object { $_ }; Compress-Archive -Path $l -DestinationPath 'lubit-web.zip' -Force; $z = Get-Item 'lubit-web.zip'; Write-Host ('[ì™„ë£Œ] lubit-web.zip  ' + [math]::Round($z.Length/1MB,1) + ' MB'); $h = Select-String -Path 'lubit-web.zip' -Pattern 'changelog' -Quiet; Write-Host ('  ì†ŒìŠ¤ íŒŒì¼ ìˆ˜: ' + $l.Count)"
 if errorlevel 1 goto fail
 
-for %%A in ("%OUT%") do echo [¿Ï·á] %%~zA bytes  ^(%%~zA / 1024 / 1024 MB ´ÜÀ§´Â ¾Æ·¡ ÂüÁ¶^)
-powershell -NoProfile -Command "(Get-Item '%OUT%').Length / 1MB | ForEach-Object { '        ' + [math]::Round($_,1) + ' MB' }"
 echo.
-echo ´ÙÀ½ ´Ü°è:
-echo   1) %OUT% ¸¦ VPS ·Î º¹»ç
-echo   2) VPS ¿¡¼­ ¾ĞÃà Ç¬ µÚ VPS¹èÆ÷.bat ½ÇÇà
-echo.
+echo VPSë¡œ ë³µì‚¬í•œ ë’¤ ì••ì¶•ì„ í’€ê³  VPSë°°í¬.bat ë¥¼ ì‹¤í–‰í•˜ì„¸ìš”.
 pause
 exit /b 0
 
+:nogit
+echo [ì˜¤ë¥˜] git ì €ì¥ì†Œ í´ë”ì—ì„œë§Œ ì‹¤í–‰í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
+pause
+exit /b 1
+
 :fail
-echo.
-echo [½ÇÆĞ] git archive ¿À·ù¸¦ È®ÀÎÇÏ¼¼¿ä
+echo [ì‹¤íŒ¨] ìœ„ ë©”ì‹œì§€ë¥¼ í™•ì¸í•˜ì„¸ìš”.
 pause
 exit /b 1

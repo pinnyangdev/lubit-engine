@@ -22,7 +22,7 @@ function Invoke-Checked([string]$what, [scriptblock]$command) {
 
 # 1. 소스 복사. robocopy 는 0~7 이 성공입니다.
 New-Item -ItemType Directory -Force -Path $Target | Out-Null
-robocopy $source $Target /E /XD node_modules data dist .git .wrangler /XF .env .dev.vars server.log | Out-Null
+robocopy $source $Target /E /XD node_modules dist .git .wrangler /XF .env .dev.vars server.log | Out-Null
 if ($LASTEXITCODE -ge 8) { throw "소스 복사 실패 (robocopy exit $LASTEXITCODE)" }
 
 # 2. 의존성 설치 · 빌드
