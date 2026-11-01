@@ -1,4 +1,4 @@
-<h1 align="center">
+<p align="center">
   <br>
   <a href="https://github.com/pinnyangdev/lubit-engine">
     <picture>
@@ -7,7 +7,10 @@
       <img src="docs/public/lubit-logo-light-mode.webp" alt="Lubit-Engine" width="500">
     </picture>
   </a>
-</h1>
+<p>
+
+<h1 align="center">Lubit Engine</h1>
+<p align="center">마인크래프트 서버 구동기</p>
 
 <p align="center">
   <a href="package.json">
