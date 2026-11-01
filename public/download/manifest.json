@@ -1,29 +1,27 @@
 {
-  "generatedAt": 1793506595341,
+  "generatedAt": 1793533606644,
   "artifacts": [
     {
       "key": "engine",
       "label": "Windows 64비트 (zip)",
       "url": "/download/engine",
-      "size": 87759981,
-      "version": "0.1.13",
+      "size": 87763546,
+      "version": "0.1.14",
       "available": true
     },
     {
       "key": "mac",
       "label": "macOS (Apple 실리콘 · 인텔)",
       "url": "/download/mac",
-      "size": 181882341,
-      "version": "0.1.11",
-      "available": true
+      "size": 0,
+      "available": false
     },
     {
       "key": "android",
       "label": "Android (APK)",
       "url": "/download/android",
-      "size": 3115602,
-      "version": "0.1.0",
-      "available": true
+      "size": 0,
+      "available": false
     },
     {
       "key": "ios",
